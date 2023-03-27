@@ -23,7 +23,7 @@
         android:layout_marginTop="10dp"
         android:layout_margin="10dp"
         android:inputType="textPersonName"
-        android:hint="Enter name" />
+        android:hint="Enter full name" />
 
     <EditText
         android:id="@+id/regemail"

@@ -19,6 +19,12 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreSettings;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,6 +32,11 @@ public class MainActivity extends AppCompatActivity {
     Button registerBtn, loginBtn;
 
     FirebaseAuth firebaseAuth;
+
+    //firestore started 21st March
+    FirebaseFirestore firestore;
+
+    String user_id;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,13 +51,16 @@ public class MainActivity extends AppCompatActivity {
 
         firebaseAuth = FirebaseAuth.getInstance();
 
+        firestore = FirebaseFirestore.getInstance();
+
+
 
 
         registerBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String uname = nameEt.getText().toString();
-                String email = emailEt.getText().toString();
+                String email = emailEt.getText().toString().trim();
                 String password = passwordEt.getText().toString().trim();
 
                 Log.d("MainActivity", email);
@@ -76,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
                                     if (task.isSuccessful()) {
                                         FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
 
+
                                         //check user get verification email or not
                                         if (firebaseUser != null) {
                                             firebaseUser.sendEmailVerification()
@@ -83,6 +98,35 @@ public class MainActivity extends AppCompatActivity {
                                                         @Override
                                                         public void onSuccess(Void unused) {
                                                             Toast.makeText(MainActivity.this, "Registered successfully", Toast.LENGTH_LONG).show();
+
+                                                            //get user id
+                                                            user_id = firebaseUser.getUid();
+                                                            //add cdetailsin firestore
+                                                            DocumentReference documentReference = firestore
+                                                                    .collection("user")
+                                                                    .document(user_id);
+                                                            Map<String, Object> userData = new HashMap<>();
+                                                            userData.put("name", uname);
+                                                            userData.put("email", email);
+                                                            documentReference.set(userData).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                                                @Override
+                                                                public void onSuccess(Void unused) {
+                                                                    Toast.makeText(MainActivity.this, "Data store successfully on Firestore", Toast.LENGTH_LONG).show();
+                                                                }
+                                                            })
+                                                                    .addOnFailureListener(new OnFailureListener() {
+                                                                @Override
+                                                                public void onFailure(@NonNull Exception e) {
+                                                                    Toast.makeText(MainActivity.this, "Not able tostore data on Firestore", Toast.LENGTH_LONG).show();
+                                                                }
+                                                            });
+
+                                                            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                                                            intent.putExtra("email", email);
+                                                            intent.putExtra("pass", password);
+                                                            intent.putExtra("userid", user_id);
+                                                            startActivity(intent);
+
                                                         }
                                                     })
                                                     .addOnFailureListener(new OnFailureListener() {
@@ -93,10 +137,7 @@ public class MainActivity extends AppCompatActivity {
                                                     });
                                         }
 
-                                        Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-                                        intent.putExtra("email", email);
-                                        intent.putExtra("pass", password);
-                                        startActivity(intent);
+
 
                                     } else {
                                         Toast.makeText(MainActivity.this, "Registration is not completed", Toast.LENGTH_LONG).show();
